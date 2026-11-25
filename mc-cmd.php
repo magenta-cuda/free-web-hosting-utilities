@@ -1,6 +1,8 @@
 <?php
-define('SHORTINIT', true);
 require_once(__DIR__ . '/../wp-load.php');
+if (!current_user_can('update_core')) {
+    die('You are not allowed to execute mc-cmd.php.');
+}
 if (array_key_exists('html', $_GET)) {
     echo '<html><body><pre>';
 }
