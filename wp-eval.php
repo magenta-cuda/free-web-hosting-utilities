@@ -1,3 +1,4 @@
+#!/usr/bin/env php
 <?php
 $host = '';
 $dir = '/wp-content/';
@@ -81,22 +82,35 @@ if (function_exists('curl_init')) {
 } else {
     echo "curl_init() does not exists, using passthru('curl ...') instead.\n";
 }
-if (file_exists($file = __DIR__ . '/curl.cmd')) {
-    $cmd = file_get_contents($file);
-} else {
-    $accept = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8';    /* */
-    $accept_language = 'en-US,en;q=0.5';
-    $accept_encoding = 'gzip, deflate, br, zstd';
-    $cmd = "curl -L -b /dev/null {$url} --compressed -H 'User-Agent: {$user_agent}' -H 'Accept: {$accept}' -H 'Accept-Language: {$accept_language}'"
-               . " -H 'Accept-Encoding: {$accept_encoding}' -H 'Upgrade-Insecure-Requests: 1'";
+$using_curl_cmd_from_file = false;
+while (true) {
+    if (file_exists($file = __DIR__ . '/curl.cmd')) {
+        $cmd = file_get_contents($file);
+        $using_curl_cmd_from_file = true;
+    } else {
+        $accept = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8';    /* */
+        $accept_language = 'en-US,en;q=0.5';
+        $accept_encoding = 'gzip, deflate, br, zstd';
+        $cmd = "curl -L -b /dev/null {$url} --compressed"
+                   . " -H 'User-Agent: {$user_agent}' -H 'Accept: {$accept}' -H 'Accept-Language: {$accept_language}'"
+                   . " -H 'Accept-Encoding: {$accept_encoding}' -H 'Upgrade-Insecure-Requests: 1'";
+    }
+    echo "{$cmd}\n";
+    ob_start();
+    passthru($cmd, $curl_ret);
+    $buffer = ob_get_clean();
+    if ($curl_ret === 0 && strpos($buffer, 'mc-cmd loaded') !== false) {
+        echo $buffer;
+        die();
+    }
+    if ($using_curl_cmd_from_file) {
+        echo "curl() using '{$file}' failed. File '{$file}' may be stale. Update and try again? (y or n) >";
+        if (fgets(STDIN)[0] !== 'y') {
+            break;
+        }
+    } else {
+        break;
+    }
 }
-echo "{$cmd}\n";
-ob_start();
-passthru($cmd, $curl_ret);
-$buffer = ob_get_clean();
-if ($curl_ret === 0 && strpos($buffer, 'mc-cmd loaded') !== false) {
-    echo $buffer;
-    die();
-}
-echo "curl('{$url}') failed, redirecting to firefox.\n";
+echo 'curl(\'' . substr($cmd, 0, 64) . "...') failed, redirecting to firefox.\n";
 system("firefox {$url}?html=1");
