@@ -1,3 +1,4 @@
+#!/usr/bin/env php
 <?php
 $host = '.com';
 $command = '/wp-content/mc-cmd.php';
