@@ -1,3 +1,4 @@
+#!/usr/bin/env php
 <?php
 $host = $argv[1];
 $user = $argv[2];
